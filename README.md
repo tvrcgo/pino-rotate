@@ -1,6 +1,10 @@
 # pino-rotate
 
-An pino transport for rotating log files
+A pino transport for rotating log files
+
+```bash
+npm install --save pino-rotate
+```
 
 ## Example
 ```js
@@ -12,7 +16,7 @@ const logger = pino({
         target: 'pino-rotate',
         options: {
           file: './logs/app-%YYYY-MM-DD%.log',
-          limit: '3m',
+          limit: '7d',
         },
       }
     ]
