@@ -3,9 +3,9 @@ import build from 'pino-abstract-transport'
 import dayjs from 'dayjs'
 import SonicBoom from 'sonic-boom'
 import fs from 'fs'
-import {  } from "../types/index"
+import { TransportOptions } from "../types/index"
 
-export default async function (opts) {
+export default async function (opts: TransportOptions) {
 
   let logfile: any = {}
   let history: any[] = []
@@ -34,8 +34,8 @@ export default async function (opts) {
 
         // 删除过期文件
         history = history.filter(log => {
-          const limitUnit = opts.limit.match(/([a-z]+)$/)[0]
-          const limitNum = opts.limit.match(/^(\d+)/)[0]
+          const limitUnit: any = opts.limit.match(/([a-z]+)$/)[0]
+          const limitNum: string = opts.limit.match(/^(\d+)/)[0]
           if (dayjs().diff(log.create_at, limitUnit, true) > Number(limitNum)) {
             fs.unlinkSync(log.file)
             return false
@@ -49,12 +49,18 @@ export default async function (opts) {
         logfile.create_at = dayjs()
       }
 
+      // JSON 输出
       if (opts.json === true) {
         logfile.sonic.write(row + '\n')
       } else {
-        const { time, level, level_label, pid, hostname, ...params } = JSON.parse(row)
-        logfile.sonic.write(`[${time} - ${hostname}(${pid}) - ${level_label}] `)
-        logfile.sonic.write(Object.entries(params).map(([k, v]) => `${k}=${v + ''}`).join(' ') + '\n')
+        // 格式自定义
+        if (typeof opts.formatter === 'function') {
+          logfile.sonic.write(opts.formatter(JSON.parse(row)) + '\n')
+        } else {
+          const { time, level, level_label, pid, hostname, ...params } = JSON.parse(row)
+          logfile.sonic.write(`[${time} - ${hostname}(${pid}) - ${level_label}] `)
+          logfile.sonic.write(Object.entries(params).map(([k, v]) => `${k}=${v + ''}`).join(' ') + '\n')
+        }
       }
     }
 
