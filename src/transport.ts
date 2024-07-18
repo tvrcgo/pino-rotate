@@ -3,7 +3,7 @@ import build from 'pino-abstract-transport'
 import dayjs from 'dayjs'
 import SonicBoom from 'sonic-boom'
 import fs from 'fs'
-import { TransportOptions } from "../types/index"
+import { TransportOptions, TimeDiffUnit } from "../types/index"
 
 export default async function (opts: TransportOptions) {
 
@@ -34,7 +34,7 @@ export default async function (opts: TransportOptions) {
 
         // 删除过期文件
         history = history.filter(log => {
-          const limitUnit: any = opts.limit.match(/([a-z]+)$/)[0]
+          const limitUnit: TimeDiffUnit = opts.limit.match(/([a-z]+)$/)[0] as TimeDiffUnit
           const limitNum: string = opts.limit.match(/^(\d+)/)[0]
           if (dayjs().diff(log.create_at, limitUnit, true) > Number(limitNum)) {
             fs.unlinkSync(log.file)
