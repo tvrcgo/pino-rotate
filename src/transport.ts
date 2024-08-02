@@ -5,6 +5,15 @@ import SonicBoom from 'sonic-boom'
 import fs from 'fs'
 import { TransportOptions, TimeDiffUnit } from "../types/index"
 
+const LEVEL_LABELS = {
+  10: 'trace',
+  20: 'debug',
+  30: 'info',
+  40: 'warn',
+  50: 'error',
+  60: 'fatal',
+}
+
 export default async function (opts: TransportOptions) {
 
   let logfile: any = {}
@@ -50,15 +59,22 @@ export default async function (opts: TransportOptions) {
       }
 
       // JSON 输出
+      const rowJson = JSON.parse(row)
+
+      // level 数值转为 label
+      if (rowJson.level) {
+        rowJson.level = LEVEL_LABELS[rowJson.level] || rowJson.level
+      }
+
       if (opts.json === true) {
-        logfile.sonic.write(row + '\n')
+        logfile.sonic.write(JSON.stringify(rowJson) + '\n')
       } else {
         // 格式自定义
         if (typeof opts.formatter === 'function') {
-          logfile.sonic.write(opts.formatter(JSON.parse(row)) + '\n')
+          logfile.sonic.write(opts.formatter(rowJson + '\n'))
         } else {
-          const { time, level, level_label, pid, hostname, ...params } = JSON.parse(row)
-          logfile.sonic.write(`[${time} - ${hostname}(${pid}) - ${level_label}] `)
+          const { time, level, pid, hostname, ...params } = rowJson
+          logfile.sonic.write(`[${time} - ${hostname}(${pid}) - ${level}] `)
           logfile.sonic.write(Object.entries(params).map(([k, v]) => `${k}=${v + ''}`).join(' ') + '\n')
         }
       }
