@@ -59,20 +59,27 @@ export default async function (opts: TransportOptions) {
       }
 
       // JSON 输出
-      const rowJson = JSON.parse(row)
+      let rowJson = JSON.parse(row)
 
       // level 数值转为 label
       if (rowJson.level) {
         rowJson.level = LEVEL_LABELS[rowJson.level] || rowJson.level
       }
 
+      // 预处理 JSON
+      if (typeof opts.filter === 'function') {
+        rowJson = opts.filter.call(this, rowJson)
+      }
+
       if (opts.json === true) {
+        // JSON 格式
         logfile.sonic.write(JSON.stringify(rowJson) + '\n')
       } else {
         // 格式自定义
         if (typeof opts.formatter === 'function') {
           logfile.sonic.write(opts.formatter(rowJson + '\n'))
         } else {
+          // 默认格式
           const { time, level, pid, hostname, ...params } = rowJson
           logfile.sonic.write(`[${time} - ${hostname}(${pid}) - ${level}] `)
           logfile.sonic.write(Object.entries(params).map(([k, v]) => `${k}=${v + ''}`).join(' ') + '\n')
