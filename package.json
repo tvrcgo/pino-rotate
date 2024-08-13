@@ -1,6 +1,6 @@
 {
   "name": "pino-rotate",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "An pino transport for rotating log files",
   "main": "lib/index.js",
   "files": [
