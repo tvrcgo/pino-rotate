@@ -21,6 +21,7 @@
   "author": "tvrcgo",
   "dependencies": {
     "dayjs": "^1.11.11",
+    "fast-glob": "^3.3.3",
     "pino-abstract-transport": "^1.2.0",
     "sonic-boom": "^4.0.1"
   }

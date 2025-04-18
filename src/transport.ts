@@ -4,6 +4,7 @@ import dayjs from 'dayjs'
 import SonicBoom from 'sonic-boom'
 import fs from 'fs'
 import { TransportOptions, TimeDiffUnit } from "../types/index"
+import fg from 'fast-glob'
 
 const LEVEL_LABELS = {
   10: 'trace',
@@ -17,11 +18,23 @@ const LEVEL_LABELS = {
 export default async function (opts: TransportOptions) {
 
   let logfile: any = {}
-  let history: any[] = []
+
+  const clean = () => {
+    const limitUnit: TimeDiffUnit = opts.limit.match(/([a-z]+)$/)[0] as TimeDiffUnit
+    const limitNum: string = opts.limit.match(/^(\d+)/)[0]
+    const logs = fg.globSync([opts.file.replace(/%(.*)%/g, '*')], { onlyFiles: true })
+
+    for (const log of logs) {
+      const stats = fs.statSync(log)
+      if (dayjs().diff(dayjs(stats.mtime), limitUnit, true) > Number(limitNum)) {
+        fs.unlinkSync(log)
+      }
+    }
+  }
 
   return build(async function (source) {
+    const file: string = opts.file.replace(/%(.*)%/g, (_, fmt) => dayjs().format(fmt))
     for await (let row of source) {
-      const file: string = opts.file.replace(/%(.*)%/g, (_, fmt) => dayjs().format(fmt))
       if (!logfile.file) {
         logfile = {
           file,
@@ -36,26 +49,14 @@ export default async function (opts: TransportOptions) {
       if (logfile.file !== file) {
         // 旧文件归档
         logfile.sonic.flush()
-        history.push({
-          file: logfile.file,
-          create_at: logfile.create_at
-        })
-
-        // 删除过期文件
-        history = history.filter(log => {
-          const limitUnit: TimeDiffUnit = opts.limit.match(/([a-z]+)$/)[0] as TimeDiffUnit
-          const limitNum: string = opts.limit.match(/^(\d+)/)[0]
-          if (dayjs().diff(log.create_at, limitUnit, true) > Number(limitNum)) {
-            fs.unlinkSync(log.file)
-            return false
-          }
-          return true
-        })
 
         // 开新文件
         logfile.sonic.reopen(file)
         logfile.file = file
         logfile.create_at = dayjs()
+
+        // 删除过期文件
+        clean()
       }
 
       // JSON 输出
@@ -81,7 +82,7 @@ export default async function (opts: TransportOptions) {
         } else {
           // 默认格式
           const { time, level, pid, hostname, ...params } = rowJson
-          logfile.sonic.write(`[${time} - ${hostname}(${pid}) - ${level}] `)
+          logfile.sonic.write(`[${time} - ${hostname}(${pid}) - ${String(level).toUpperCase()}] `)
           logfile.sonic.write(Object.entries(params).map(([k, v]) => `${k}=${v + ''}`).join(' ') + '\n')
         }
       }
