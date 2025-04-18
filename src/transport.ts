@@ -33,8 +33,8 @@ export default async function (opts: TransportOptions) {
   }
 
   return build(async function (source) {
-    const file: string = opts.file.replace(/%(.*)%/g, (_, fmt) => dayjs().format(fmt))
     for await (let row of source) {
+      const file: string = opts.file.replace(/%(.*)%/g, (_, fmt) => dayjs().format(fmt))
       if (!logfile.file) {
         logfile = {
           file,
